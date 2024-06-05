@@ -22,8 +22,4 @@
     <ProjectReference Include="..\RealEstate.Application\RealEstate.Application.csproj" />
   </ItemGroup>
 
-  <ItemGroup>
-    <Folder Include="Data\" />
-  </ItemGroup>
-
 </Project>
