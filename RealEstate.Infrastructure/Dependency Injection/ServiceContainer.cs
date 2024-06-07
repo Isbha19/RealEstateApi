@@ -39,10 +39,10 @@ namespace RealEstate.Infrastructure.Dependency_Injection
                     options.TokenValidationParameters = new TokenValidationParameters
                     {
                         ValidateIssuerSigningKey = true,
-                        IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(configuration["JWT:Key"])),
+                        IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes("this is my custom Secret key for authentication which should be atleast 512 bits")),
                         ValidIssuer = configuration["JWT:Issuer"],
                         ValidateIssuer = true,
-                        ValidateAudience = true
+                        ValidateAudience = false
 
                     };
                 });

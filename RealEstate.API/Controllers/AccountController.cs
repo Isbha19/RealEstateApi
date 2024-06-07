@@ -1,9 +1,12 @@
-﻿using Microsoft.AspNetCore.Http;
+﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using RealEstate.Application.Contracts;
 using RealEstate.Application.DTOs.Account;
 using RealEstate.Application.DTOs.Request.Account;
 using RealEstate.Application.DTOs.Response.Account;
+using RealEstate.Infrastructure.Repo;
+using System.Security.Claims;
 
 namespace RealEstate.API.Controllers
 {
@@ -26,12 +29,29 @@ namespace RealEstate.API.Controllers
         }
         [HttpPost("register")]
 
-        public async Task<ActionResult<LoginResponse>> Register(RegisterDto registerDto)
+        public async Task<ActionResult<GeneralResponse>> Register(RegisterDto registerDto)
         {
             var result = await _user.Register(registerDto);
             return Ok(result);
         }
+        [Authorize]
+        [HttpGet("refresh-user-token")]
+        public async Task<ActionResult<GeneralResponse>> RefreshUserToken()
+        {
+            var email = User.FindFirst(ClaimTypes.Email)?.Value;
+            if (string.IsNullOrEmpty(email))
+            {
+                return BadRequest("User email not found");
+            }
 
+            var response = await _user.RefreshToken(email);
+            if (!response.Flag)
+            {
+                return BadRequest(response.Message);
+            }
+
+            return Ok(new { token = response.refreshToken, message = response.Message });
+        }
 
     }
 }

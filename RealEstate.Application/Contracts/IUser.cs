@@ -8,6 +8,7 @@ namespace RealEstate.Application.Contracts
     public interface IUser
     {
         Task<LoginResponse> Login(LoginDto loginDto);
-        Task<GeneralResponse> Register(RegisterDto registerDto); 
+        Task<GeneralResponse> Register(RegisterDto registerDto);
+        Task<LoginResponse> RefreshToken(string email);
     }
 }

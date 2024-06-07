@@ -1,5 +1,6 @@
 ﻿
 
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
@@ -70,7 +71,16 @@ namespace RealEstate.Infrastructure.Repo
 
         }
 
-
+        public async Task<LoginResponse> RefreshToken(string email)
+        {
+            var user = await _userManager.FindByEmailAsync(email);
+            if (user == null)
+            {
+                return new LoginResponse(false, "User not found");
+            }
+            var userDto=CreateApplicationUserDto(user);
+            return new LoginResponse(true, "Token Refreshed",refreshToken: userDto.JWT);
+        }
 
         #region Private Helper Methods
         private UserDto CreateApplicationUserDto(User user)
@@ -88,7 +98,7 @@ namespace RealEstate.Infrastructure.Repo
                 new Claim(ClaimTypes.GivenName,user.FirstName),
                 new Claim(ClaimTypes.Surname,user.LastName),
             };
-            var securityKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(GenerateKey(64)));
+            var securityKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes("this is my custom Secret key for authentication which should be atleast 512 bits"));
             var credentials = new SigningCredentials(securityKey, SecurityAlgorithms.HmacSha512Signature);
             var tokenDescriptor = new SecurityTokenDescriptor
             {
@@ -106,15 +116,9 @@ namespace RealEstate.Infrastructure.Repo
             return await _userManager.Users.AnyAsync(x=>x.Email == email.ToLower());
         }
 
-        private string GenerateKey(int keySizeInBytes)
-        {
-            byte[] keyBytes = new byte[keySizeInBytes];
-            using (var rng = new RNGCryptoServiceProvider())
-            {
-                rng.GetBytes(keyBytes);
-            }
-            return Convert.ToBase64String(keyBytes);
-        }
+      
+
+
 
         #endregion
     }
