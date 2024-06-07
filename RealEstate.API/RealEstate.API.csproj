@@ -16,10 +16,6 @@
   </ItemGroup>
 
   <ItemGroup>
-    <Folder Include="Controllers\" />
-  </ItemGroup>
-
-  <ItemGroup>
     <ProjectReference Include="..\RealEstate.Application\RealEstate.Application.csproj" />
     <ProjectReference Include="..\RealEstate.Infrastructure\RealEstate.Infrastructure.csproj" />
   </ItemGroup>
