@@ -11,6 +11,7 @@ using RealEstate.Application.DTOs.Response.Account;
 using RealEstate.Domain.Entities;
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
+using System.Security.Cryptography;
 using System.Text;
 
 namespace RealEstate.Infrastructure.Repo
@@ -87,7 +88,7 @@ namespace RealEstate.Infrastructure.Repo
                 new Claim(ClaimTypes.GivenName,user.FirstName),
                 new Claim(ClaimTypes.Surname,user.LastName),
             };
-            var securityKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_configuration["JWT:Key"]));
+            var securityKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(GenerateKey(64)));
             var credentials = new SigningCredentials(securityKey, SecurityAlgorithms.HmacSha512Signature);
             var tokenDescriptor = new SecurityTokenDescriptor
             {
@@ -105,7 +106,16 @@ namespace RealEstate.Infrastructure.Repo
             return await _userManager.Users.AnyAsync(x=>x.Email == email.ToLower());
         }
 
-    
+        private string GenerateKey(int keySizeInBytes)
+        {
+            byte[] keyBytes = new byte[keySizeInBytes];
+            using (var rng = new RNGCryptoServiceProvider())
+            {
+                rng.GetBytes(keyBytes);
+            }
+            return Convert.ToBase64String(keyBytes);
+        }
+
         #endregion
     }
 }
