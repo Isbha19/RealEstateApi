@@ -4,8 +4,10 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.IdentityModel.Tokens;
+using RealEstate.Application.Contracts;
 using RealEstate.Domain.Entities;
 using RealEstate.Infrastructure.Data;
+using RealEstate.Infrastructure.Repo;
 using System.Text;
 
 
@@ -44,6 +46,7 @@ namespace RealEstate.Infrastructure.Dependency_Injection
 
                     };
                 });
+            services.AddScoped<IUser, UserRepo>();
            
             return services;
         }

@@ -36,7 +36,7 @@ namespace RealEstate.Infrastructure.Repo
             if (user.EmailConfirmed == false) return new LoginResponse(false, "please confirm your email");
 
             var result=await _signInManager.CheckPasswordSignInAsync(user,loginDto.Password,false);
-            if (result.Succeeded) return new LoginResponse(false, "Invalid username or password");
+            if (!result.Succeeded) return new LoginResponse(false, "Invalid username or password");
             var userDto = CreateApplicationUserDto(user);
 
             return new LoginResponse(true,$"{userDto.FirstName} {userDto.LastName} successfully logged in",userDto.JWT); 
