@@ -1,5 +1,6 @@
 ﻿using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Identity;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -47,7 +48,23 @@ namespace RealEstate.Infrastructure.Dependency_Injection
                     };
                 });
             services.AddScoped<IUser, UserRepo>();
-           
+            //to respond with an Array containing error messages when the model state is invalid
+            services.Configure<ApiBehaviorOptions>(options =>
+            {
+                options.InvalidModelStateResponseFactory = ActionContext =>
+                {
+                    var errors = ActionContext.ModelState
+                    .Where(x => x.Value.Errors.Count > 0)
+                    .SelectMany(x => x.Value.Errors)
+                    .Select(x => x.ErrorMessage).ToArray();
+                    var toReturn = new
+                    {
+                        Errors = errors
+                    };
+                    return new BadRequestObjectResult(toReturn);
+                };
+            });
+
             return services;
         }
     }

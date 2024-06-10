@@ -32,6 +32,13 @@ namespace RealEstate.API.Controllers
         public async Task<ActionResult<GeneralResponse>> Register(RegisterDto registerDto)
         {
             var result = await _user.Register(registerDto);
+
+            if (!result.Flag)
+            {
+                // If result.flag is false, return BadRequest with the message from result.message
+                return BadRequest(new GeneralResponse(false, result.Message));
+            }
+
             return Ok(result);
         }
         [Authorize]
