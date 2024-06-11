@@ -9,6 +9,7 @@ using RealEstate.Application.Contracts;
 using RealEstate.Domain.Entities;
 using RealEstate.Infrastructure.Data;
 using RealEstate.Infrastructure.Repo;
+using RealEstate.Infrastructure.Services;
 using System.Text;
 
 
@@ -48,6 +49,7 @@ namespace RealEstate.Infrastructure.Dependency_Injection
                     };
                 });
             services.AddScoped<IUser, UserRepo>();
+            services.AddScoped<EmailService>();
             //to respond with an Array containing error messages when the model state is invalid
             services.Configure<ApiBehaviorOptions>(options =>
             {

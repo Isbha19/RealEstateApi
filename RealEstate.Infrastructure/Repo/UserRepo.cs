@@ -2,14 +2,17 @@
 
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
+using Microsoft.AspNetCore.WebUtilities;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.IdentityModel.Tokens;
 using RealEstate.Application.Contracts;
 using RealEstate.Application.DTOs.Account;
+using RealEstate.Application.DTOs.Request;
 using RealEstate.Application.DTOs.Request.Account;
 using RealEstate.Application.DTOs.Response.Account;
 using RealEstate.Domain.Entities;
+using RealEstate.Infrastructure.Services;
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using System.Security.Cryptography;
@@ -17,38 +20,43 @@ using System.Text;
 
 namespace RealEstate.Infrastructure.Repo
 {
-    public class UserRepo:IUser
+    public class UserRepo : IUser
     {
         private readonly IConfiguration _configuration;
         private readonly SignInManager<User> _signInManager;
         private readonly UserManager<User> _userManager;
+        private readonly EmailService emailService;
+        private readonly IConfiguration config;
 
-        public UserRepo(IConfiguration configuration,SignInManager<User> signInManager,
-            UserManager<User> userManager)
+        public UserRepo(IConfiguration configuration, SignInManager<User> signInManager,
+            UserManager<User> userManager, EmailService emailService,
+            IConfiguration config)
         {
-          _configuration = configuration;
-          _signInManager = signInManager;
-          _userManager = userManager;
+            _configuration = configuration;
+            _signInManager = signInManager;
+            _userManager = userManager;
+            this.emailService = emailService;
+            this.config = config;
         }
 
         public async Task<LoginResponse> Login(LoginDto loginDto)
         {
-            var user=await _userManager.FindByNameAsync(loginDto.UserName);
+            var user = await _userManager.FindByNameAsync(loginDto.UserName);
             if (user == null) return new LoginResponse(false, "Invalid username or password");
             if (user.EmailConfirmed == false) return new LoginResponse(false, "please confirm your email");
 
-            var result=await _signInManager.CheckPasswordSignInAsync(user,loginDto.Password,false);
+            var result = await _signInManager.CheckPasswordSignInAsync(user, loginDto.Password, false);
             if (!result.Succeeded) return new LoginResponse(false, "Invalid username or password");
             var userDto = CreateApplicationUserDto(user);
 
-            return new LoginResponse(true,$"{userDto.FirstName} {userDto.LastName} successfully logged in",userDto.JWT); 
+            return new LoginResponse(true, $"{userDto.FirstName} {userDto.LastName} successfully logged in", userDto.JWT);
 
 
         }
 
         public async Task<GeneralResponse> Register(RegisterDto registerDto)
         {
-            if(await CheckEmailExistAsync(registerDto.Email))
+            if (await CheckEmailExistAsync(registerDto.Email))
             {
                 return new GeneralResponse(false, $"An existing account is using {registerDto.Email}, email address, please try with another email address");
             }
@@ -57,15 +65,28 @@ namespace RealEstate.Infrastructure.Repo
                 FirstName = registerDto.FirstName.ToLower(),
                 LastName = registerDto.LastName.ToLower(),
                 UserName = registerDto.Email.ToLower(),
-                Email = registerDto.Email.ToLower(),
-                EmailConfirmed = true
+                Email = registerDto.Email.ToLower()
             };
-            var result=await _userManager.CreateAsync(userToAdd,registerDto.Password);
+            var result = await _userManager.CreateAsync(userToAdd, registerDto.Password);
             var errors = string.Join(", ", result.Errors.Select(e => e.Description));
 
             if (!result.Succeeded) return new GeneralResponse(false, errors);
+            try
+            {
+                if(await SendConfirmEmailAsync(userToAdd))
+                {
+                    return new GeneralResponse(true, "Your account has been created, please confirm the email");
 
-            return new GeneralResponse(true, "Your account has been created, you can login");
+                }
+                return new GeneralResponse(false, "failed to send email for verification,Please contact admin");
+
+            }
+            catch (Exception ex)
+            {
+                return new GeneralResponse(false, "failed to send email for verification,Please contact admin");
+
+            }
+
 
 
 
@@ -78,10 +99,10 @@ namespace RealEstate.Infrastructure.Repo
             {
                 return new LoginResponse(false, "User not found");
             }
-            var userDto=CreateApplicationUserDto(user);
-            return new LoginResponse(true, "Token Refreshed",refreshToken: userDto.JWT);
+            var userDto = CreateApplicationUserDto(user);
+            return new LoginResponse(true, "Token Refreshed", refreshToken: userDto.JWT);
         }
-
+       
         #region Private Helper Methods
         private UserDto CreateApplicationUserDto(User user)
         {
@@ -113,11 +134,23 @@ namespace RealEstate.Infrastructure.Repo
         }
         private async Task<bool> CheckEmailExistAsync(string email)
         {
-            return await _userManager.Users.AnyAsync(x=>x.Email == email.ToLower());
+            return await _userManager.Users.AnyAsync(x => x.Email == email.ToLower());
         }
 
-      
 
+        private async Task<bool> SendConfirmEmailAsync(User user)
+        {
+            var token = await _userManager.GenerateEmailConfirmationTokenAsync(user);
+            token=WebEncoders.Base64UrlEncode(Encoding.UTF8.GetBytes(token));
+            var url = $"{config["JWT:ClientUrl"]}/{config["Email:ConfirmationEmailPath"]}?token={token}&email={user.Email}";
+            var body = $"<p>Hello: {user.FirstName}</p>" +
+                "<p>Please confirm your email address by clicking on the following link</p>" +
+                $"<p><a href=\"{url}\">Click here</a></p>" +
+                "<p>Thank you,</p>" +
+                $"<br>{config["Email:ApplicationName"]}";
+            var emailSend = new EmailSendDto(user.Email, "Confirm your email", body);
+            return await emailService.SendEmailAsync(emailSend);
+        }
 
 
         #endregion
