@@ -25,6 +25,11 @@ namespace RealEstate.API.Controllers
         public async Task<ActionResult<LoginResponse>> Login(LoginDto loginDto)
         {
             var result=await _user.Login(loginDto);
+            if (!result.Flag)
+            {
+                // If result.flag is false, return BadRequest with the message from result.message
+                return BadRequest(new LoginResponse(false, result.Message));
+            }
             return Ok(result);
         }
         [HttpPost("register")]
