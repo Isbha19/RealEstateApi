@@ -64,6 +64,28 @@ namespace RealEstate.API.Controllers
 
             return Ok(new { token = response.refreshToken, message = response.Message });
         }
+        [HttpPut("confirm-email")]
+        public async Task<IActionResult> ConfirmEmail(ConfirmEmailDto confirmEmailDto)
+        {
+            var result = await _user.ConfirmEmail(confirmEmailDto);
+            if (!result.Flag)
+            {
+                // If result.flag is false, return BadRequest with the message from result.message
+                return BadRequest(result);
+            }
+            return Ok(result);
+        }
+        [HttpPost("resend-email-confirmation-link/{email}")]
+        public async Task<IActionResult> ResendEmailConfirmationLink(string email)
+        {
+            var result = await _user.ResendEmailConfirmation(email);
+            if (!result.Flag)
+            {
+                // If result.flag is false, return BadRequest with the message from result.message
+                return BadRequest(result);
+            }
+            return Ok(result);
+        }
 
     }
 }

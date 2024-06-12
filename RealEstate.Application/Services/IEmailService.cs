@@ -1,4 +1,4 @@
-﻿using RealEstate.Application.DTOs.Request;
+﻿using RealEstate.Application.DTOs.Request.Account;
 
 
 namespace RealEstate.Application.Services

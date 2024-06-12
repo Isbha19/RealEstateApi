@@ -4,7 +4,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace RealEstate.Application.DTOs.Request
+namespace RealEstate.Application.DTOs.Request.Account
 {
     public class EmailSendDto
     {
@@ -14,7 +14,7 @@ namespace RealEstate.Application.DTOs.Request
             Subject = subject;
             Body = body;
         }
-       
+
         public string To { get; set; }
         public string Subject { get; set; }
         public string Body { get; set; }

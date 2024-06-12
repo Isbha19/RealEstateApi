@@ -104,7 +104,61 @@ namespace RealEstate.Infrastructure.Repo
             var userDto = CreateApplicationUserDto(user);
             return new LoginResponse(true, "Token Refreshed", refreshToken: userDto.JWT);
         }
-       
+
+        public async Task<GeneralResponse> ConfirmEmail(ConfirmEmailDto confirmEmailDto)
+        {
+            var user=await _userManager.FindByEmailAsync(confirmEmailDto.Email);
+            if(user == null)
+            {
+                return new GeneralResponse(false, "This email address has not been registered yet");
+
+            }
+            if (user.EmailConfirmed == true) return new GeneralResponse(false, "Your email was confirmed before. Please login to your account");
+            try
+            {
+                var decodedTokenBytes = WebEncoders.Base64UrlDecode(confirmEmailDto.Token);
+                var decodedToken = Encoding.UTF8.GetString(decodedTokenBytes);
+                var result=await _userManager.ConfirmEmailAsync(user, decodedToken);
+                if (result.Succeeded)
+                {
+                    return new GeneralResponse(true, "Your email address is confirmed");
+
+                }
+                return new GeneralResponse(false, "Invalid token. please try again");
+
+            }
+            catch (Exception ex)
+            {
+                return new GeneralResponse(false, "Invalid token. please try again");
+
+            }
+        }
+
+        public async Task<GeneralResponse> ResendEmailConfirmation(string email)
+        {
+            if (string.IsNullOrEmpty(email)) return new GeneralResponse(false, "Invalid token. please try again");
+            var user = await _userManager.FindByEmailAsync(email);
+            if (user == null) return new GeneralResponse(false, "This email address has not been registered yet");
+            if (user.EmailConfirmed == true) return new GeneralResponse(false, "Your email was confirmed before. Please login to your account");
+            try
+            {
+                if (await SendConfirmEmailAsync(user)) {
+                    return new GeneralResponse(true, "Confirmation link has been send to the email address");
+                }
+                return new GeneralResponse(false, "Failed to send email, please contact admin");
+
+            }
+            catch (Exception)
+            {
+                return new GeneralResponse(false, "Failed to send email, please contact admin");
+ 
+            }
+
+
+        }
+
+
+
         #region Private Helper Methods
         private UserDto CreateApplicationUserDto(User user)
         {
@@ -154,6 +208,7 @@ namespace RealEstate.Infrastructure.Repo
             return await emailService.SendEmailAsync(emailSend);
         }
 
+    
 
         #endregion
     }

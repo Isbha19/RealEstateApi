@@ -2,7 +2,6 @@
 using RealEstate.Application.DTOs.Request.Account;
 using RealEstate.Application.DTOs.Response.Account;
 
-
 namespace RealEstate.Application.Contracts
 {
     public interface IUser
@@ -10,5 +9,7 @@ namespace RealEstate.Application.Contracts
         Task<LoginResponse> Login(LoginDto loginDto);
         Task<GeneralResponse> Register(RegisterDto registerDto);
         Task<LoginResponse> RefreshToken(string email);
+        Task<GeneralResponse> ConfirmEmail(ConfirmEmailDto confirmEmailDto);
+        Task<GeneralResponse> ResendEmailConfirmation(string email);    
     }
 }

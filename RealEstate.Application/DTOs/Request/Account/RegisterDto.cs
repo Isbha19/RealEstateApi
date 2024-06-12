@@ -19,7 +19,7 @@ namespace RealEstate.Application.DTOs.Request.Account
 
         public string LastName { get; set; }
         [Required]
-        [RegularExpression(@"^[^@\s]+@[^@\s]+\.[^@\s]+$", ErrorMessage ="Invalid Email Address")]
+        [RegularExpression(@"^[A-Za-z0-9!#%&'*+/=?^_`{|}~-]+(?:\.[A-Za-z0-9!#%&'*+/=?^_`{|}~-]+)*@(?:[A-Za-z0-9](?:[A-Za-z0-9-]*[A-Za-z0-9])?\.)+[A-Za-z0-9](?:[A-Za-z0-9-]*[A-Za-z0-9])?$", ErrorMessage = "Invalid Email Address")]
         public string Email { get; set; }
         [Required]
         [StringLength(15, MinimumLength = 6, ErrorMessage = "Password must be atleast {2},and maximum {1} characters")]

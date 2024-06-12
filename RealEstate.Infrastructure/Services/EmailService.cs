@@ -3,7 +3,7 @@
 using Mailjet.Client;
 using Mailjet.Client.TransactionalEmails;
 using Microsoft.Extensions.Configuration;
-using RealEstate.Application.DTOs.Request;
+using RealEstate.Application.DTOs.Request.Account;
 using RealEstate.Application.Services;
 
 namespace RealEstate.Infrastructure.Services
