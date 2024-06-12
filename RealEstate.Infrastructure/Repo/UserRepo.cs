@@ -75,7 +75,7 @@ namespace RealEstate.Infrastructure.Repo
             if (!result.Succeeded) return new GeneralResponse(false, errors);
             try
             {
-                if(await SendConfirmEmailAsync(userToAdd))
+                if (await SendConfirmEmailAsync(userToAdd))
                 {
                     return new GeneralResponse(true, "Your account has been created, please confirm the email");
 
@@ -107,8 +107,8 @@ namespace RealEstate.Infrastructure.Repo
 
         public async Task<GeneralResponse> ConfirmEmail(ConfirmEmailDto confirmEmailDto)
         {
-            var user=await _userManager.FindByEmailAsync(confirmEmailDto.Email);
-            if(user == null)
+            var user = await _userManager.FindByEmailAsync(confirmEmailDto.Email);
+            if (user == null)
             {
                 return new GeneralResponse(false, "This email address has not been registered yet");
 
@@ -118,7 +118,7 @@ namespace RealEstate.Infrastructure.Repo
             {
                 var decodedTokenBytes = WebEncoders.Base64UrlDecode(confirmEmailDto.Token);
                 var decodedToken = Encoding.UTF8.GetString(decodedTokenBytes);
-                var result=await _userManager.ConfirmEmailAsync(user, decodedToken);
+                var result = await _userManager.ConfirmEmailAsync(user, decodedToken);
                 if (result.Succeeded)
                 {
                     return new GeneralResponse(true, "Your email address is confirmed");
@@ -142,7 +142,8 @@ namespace RealEstate.Infrastructure.Repo
             if (user.EmailConfirmed == true) return new GeneralResponse(false, "Your email was confirmed before. Please login to your account");
             try
             {
-                if (await SendConfirmEmailAsync(user)) {
+                if (await SendConfirmEmailAsync(user))
+                {
                     return new GeneralResponse(true, "Confirmation link has been send to the email address");
                 }
                 return new GeneralResponse(false, "Failed to send email, please contact admin");
@@ -151,7 +152,7 @@ namespace RealEstate.Infrastructure.Repo
             catch (Exception)
             {
                 return new GeneralResponse(false, "Failed to send email, please contact admin");
- 
+
             }
 
 
@@ -179,7 +180,30 @@ namespace RealEstate.Infrastructure.Repo
             }
         }
 
+        public async Task<GeneralResponse> ResetPassword(ResetPasswordDto resetPasswordDto)
+        {
+            var user = await _userManager.FindByEmailAsync(resetPasswordDto.Email);
+            if (user == null) return new GeneralResponse(false, "This email address has not been registered yet");
+            if (user.EmailConfirmed == false) return new GeneralResponse(false, "Please confirm your email address first");
+            try
+            {
+                var decodedTokenBytes = WebEncoders.Base64UrlDecode(resetPasswordDto.Token);
+                var decodedToken = Encoding.UTF8.GetString(decodedTokenBytes);
+                var result = await _userManager.ResetPasswordAsync(user, decodedToken,resetPasswordDto.NewPassword);
+                if (result.Succeeded)
+                {
+                    return new GeneralResponse(true, "Your password has been reset");
 
+                }
+                return new GeneralResponse(false, "Invalid token. please try again");
+
+            }
+            catch (Exception ex)
+            {
+                return new GeneralResponse(false, "Invalid token. please try again");
+
+            }
+        }
 
         #region Private Helper Methods
         private UserDto CreateApplicationUserDto(User user)
@@ -219,25 +243,27 @@ namespace RealEstate.Infrastructure.Repo
         private async Task<bool> SendConfirmEmailAsync(User user)
         {
             var token = await _userManager.GenerateEmailConfirmationTokenAsync(user);
-            token=WebEncoders.Base64UrlEncode(Encoding.UTF8.GetBytes(token));
+            token = WebEncoders.Base64UrlEncode(Encoding.UTF8.GetBytes(token));
             var url = $"{config["JWT:ClientUrl"]}/{config["Email:ConfirmationEmailPath"]}?token={token}&email={user.Email}";
             var body = $"<p>Hello: {user.FirstName}</p>" +
                 "<p>Please confirm your email address by clicking on the following link</p>" +
                 $"<p><a href=\"{url}\">Click here</a></p>" +
                 "<p>Thank you,</p>" +
                 $"<br>{config["Email:ApplicationName"]}";
-            var emailSend = new EmailSendDto(user.Email, "Confirm your email", EmailBody.EmailStringBody(user.FirstName,user.LastName,url, config["Email:ApplicationName"]));
+            var emailSend = new EmailSendDto(user.Email, "Confirm your email", EmailBody.EmailStringBody(user.FirstName, user.LastName, url, config["Email:ApplicationName"]));
             return await emailService.SendEmailAsync(emailSend);
         }
 
-     private async Task<bool> SendForgotUsernameorPasswordEmail(User user)
+        private async Task<bool> SendForgotUsernameorPasswordEmail(User user)
         {
             var token = await _userManager.GeneratePasswordResetTokenAsync(user);
             token = WebEncoders.Base64UrlEncode(Encoding.UTF8.GetBytes(token));
             var url = $"{config["JWT:ClientUrl"]}/{config["Email:ResetPasswordPath"]}?token={token}&email={user.Email}";
-            var emailSend = new EmailSendDto(user.Email, "Reset password", ForgotPasswordEmailBody.EmailStringBody(user.FirstName,user.LastName, url, config["Email:ApplicationName"]));
+            var emailSend = new EmailSendDto(user.Email, "Reset password", ForgotPasswordEmailBody.EmailStringBody(user.FirstName, user.LastName, url, config["Email:ApplicationName"]));
             return await emailService.SendEmailAsync(emailSend);
         }
+
+
 
         #endregion
     }
