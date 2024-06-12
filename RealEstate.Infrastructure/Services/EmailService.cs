@@ -4,10 +4,11 @@ using Mailjet.Client;
 using Mailjet.Client.TransactionalEmails;
 using Microsoft.Extensions.Configuration;
 using RealEstate.Application.DTOs.Request;
+using RealEstate.Application.Services;
 
 namespace RealEstate.Infrastructure.Services
 {
-    public class EmailService
+    public class EmailService:IEmailService
     {
         private readonly IConfiguration _config;
 
@@ -17,7 +18,7 @@ namespace RealEstate.Infrastructure.Services
         }
         public async Task<bool> SendEmailAsync(EmailSendDto emailSend)
         {
-            MailjetClient client = new MailjetClient(_config["MailJet:ApiKey], _config["MailJet:SecretKey"]);
+            MailjetClient client = new MailjetClient(_config["MailJet:ApiKey"], _config["MailJet:SecretKey"]);
             var email = new TransactionalEmailBuilder()
                 .WithFrom(new SendContact(_config["Email:From"], _config["Email:ApplicationName"]))
                 .WithSubject(emailSend.Subject)

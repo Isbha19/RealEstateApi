@@ -1,5 +1,6 @@
 ﻿
 
+using AngularAuthAPI.Helpers;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.WebUtilities;
@@ -11,6 +12,7 @@ using RealEstate.Application.DTOs.Account;
 using RealEstate.Application.DTOs.Request;
 using RealEstate.Application.DTOs.Request.Account;
 using RealEstate.Application.DTOs.Response.Account;
+using RealEstate.Application.Services;
 using RealEstate.Domain.Entities;
 using RealEstate.Infrastructure.Services;
 using System.IdentityModel.Tokens.Jwt;
@@ -25,11 +27,11 @@ namespace RealEstate.Infrastructure.Repo
         private readonly IConfiguration _configuration;
         private readonly SignInManager<User> _signInManager;
         private readonly UserManager<User> _userManager;
-        private readonly EmailService emailService;
+        private readonly IEmailService emailService;
         private readonly IConfiguration config;
 
         public UserRepo(IConfiguration configuration, SignInManager<User> signInManager,
-            UserManager<User> userManager, EmailService emailService,
+            UserManager<User> userManager, IEmailService emailService,
             IConfiguration config)
         {
             _configuration = configuration;
@@ -148,7 +150,7 @@ namespace RealEstate.Infrastructure.Repo
                 $"<p><a href=\"{url}\">Click here</a></p>" +
                 "<p>Thank you,</p>" +
                 $"<br>{config["Email:ApplicationName"]}";
-            var emailSend = new EmailSendDto(user.Email, "Confirm your email", body);
+            var emailSend = new EmailSendDto(user.Email, "Confirm your email", EmailBody.EmailStringBody(user.FirstName,url, config["Email:ApplicationName"]));
             return await emailService.SendEmailAsync(emailSend);
         }
 
