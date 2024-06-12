@@ -12,5 +12,6 @@ namespace RealEstate.Application.Contracts
         Task<GeneralResponse> ConfirmEmail(ConfirmEmailDto confirmEmailDto);
         Task<GeneralResponse> ResendEmailConfirmation(string email);
         Task<GeneralResponse> ForgotUsernameorPassword(string email);
+        Task<GeneralResponse> ResetPassword(ResetPasswordDto resetPasswordDto);
     }
 }

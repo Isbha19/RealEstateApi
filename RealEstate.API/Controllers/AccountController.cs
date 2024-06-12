@@ -93,7 +93,17 @@ namespace RealEstate.API.Controllers
             var result = await _user.ForgotUsernameorPassword(email);
             if (!result.Flag)
             {
-                // If result.flag is false, return BadRequest with the message from result.message
+                return BadRequest(result);
+            }
+            return Ok(result);
+        }
+
+        [HttpPut("reset-password")]
+        public async Task<IActionResult> ResetPassword(ResetPasswordDto resetPasswordDto)
+        {
+            var result = await _user.ResetPassword(resetPasswordDto);
+            if (!result.Flag)
+            {
                 return BadRequest(result);
             }
             return Ok(result);
