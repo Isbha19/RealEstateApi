@@ -87,5 +87,17 @@ namespace RealEstate.API.Controllers
             return Ok(result);
         }
 
+        [HttpPost("forgot-username-or-password/{email}")]
+        public async Task<IActionResult> ForgotUserNameOrPassword(string email)
+        {
+            var result = await _user.ForgotUsernameorPassword(email);
+            if (!result.Flag)
+            {
+                // If result.flag is false, return BadRequest with the message from result.message
+                return BadRequest(result);
+            }
+            return Ok(result);
+        }
+
     }
 }

@@ -136,7 +136,7 @@ namespace RealEstate.Infrastructure.Repo
 
         public async Task<GeneralResponse> ResendEmailConfirmation(string email)
         {
-            if (string.IsNullOrEmpty(email)) return new GeneralResponse(false, "Invalid token. please try again");
+            if (string.IsNullOrEmpty(email)) return new GeneralResponse(false, "Invalid email");
             var user = await _userManager.FindByEmailAsync(email);
             if (user == null) return new GeneralResponse(false, "This email address has not been registered yet");
             if (user.EmailConfirmed == true) return new GeneralResponse(false, "Your email was confirmed before. Please login to your account");
@@ -155,6 +155,28 @@ namespace RealEstate.Infrastructure.Repo
             }
 
 
+        }
+
+        public async Task<GeneralResponse> ForgotUsernameorPassword(string email)
+        {
+            if (string.IsNullOrEmpty(email)) return new GeneralResponse(false, "Invalid email");
+            var user = await _userManager.FindByEmailAsync(email);
+            if (user == null) return new GeneralResponse(false, "This email address has not been registered yet");
+            if (user.EmailConfirmed == false) return new GeneralResponse(false, "Please confirm your email address first");
+            try
+            {
+                if (await SendForgotUsernameorPasswordEmail(user))
+                {
+                    return new GeneralResponse(true, "Forgot username or password email sent");
+                }
+                return new GeneralResponse(false, "Failed to send email, please contact admin");
+
+            }
+            catch (Exception)
+            {
+                return new GeneralResponse(false, "Failed to send email, please contact admin");
+
+            }
         }
 
 
@@ -204,11 +226,18 @@ namespace RealEstate.Infrastructure.Repo
                 $"<p><a href=\"{url}\">Click here</a></p>" +
                 "<p>Thank you,</p>" +
                 $"<br>{config["Email:ApplicationName"]}";
-            var emailSend = new EmailSendDto(user.Email, "Confirm your email", EmailBody.EmailStringBody(user.FirstName,url, config["Email:ApplicationName"]));
+            var emailSend = new EmailSendDto(user.Email, "Confirm your email", EmailBody.EmailStringBody(user.FirstName,user.LastName,url, config["Email:ApplicationName"]));
             return await emailService.SendEmailAsync(emailSend);
         }
 
-    
+     private async Task<bool> SendForgotUsernameorPasswordEmail(User user)
+        {
+            var token = await _userManager.GeneratePasswordResetTokenAsync(user);
+            token = WebEncoders.Base64UrlEncode(Encoding.UTF8.GetBytes(token));
+            var url = $"{config["JWT:ClientUrl"]}/{config["Email:ResetPasswordPath"]}?token={token}&email={user.Email}";
+            var emailSend = new EmailSendDto(user.Email, "Reset password", ForgotPasswordEmailBody.EmailStringBody(user.FirstName,user.LastName, url, config["Email:ApplicationName"]));
+            return await emailService.SendEmailAsync(emailSend);
+        }
 
         #endregion
     }
