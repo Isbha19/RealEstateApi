@@ -1,4 +1,5 @@
-﻿using RealEstate.Application.DTOs.Account;
+﻿using Microsoft.AspNetCore.Mvc;
+using RealEstate.Application.DTOs.Account;
 using RealEstate.Application.DTOs.Request.Account;
 using RealEstate.Application.DTOs.Response.Account;
 
@@ -13,5 +14,6 @@ namespace RealEstate.Application.Contracts
         Task<GeneralResponse> ResendEmailConfirmation(string email);
         Task<GeneralResponse> ForgotUsernameorPassword(string email);
         Task<GeneralResponse> ResetPassword(ResetPasswordDto resetPasswordDto);
+        Task<GeneralResponse<UserDto>> RegisterWithThirdParty(RegisterWithExternalDto model);
     }
 }

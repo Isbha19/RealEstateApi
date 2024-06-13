@@ -3,6 +3,7 @@
 using AngularAuthAPI.Helpers;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.WebUtilities;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
@@ -13,12 +14,15 @@ using RealEstate.Application.DTOs.Request;
 using RealEstate.Application.DTOs.Request.Account;
 using RealEstate.Application.DTOs.Response.Account;
 using RealEstate.Application.Services;
+using RealEstate.Application.Extensions;
 using RealEstate.Domain.Entities;
 using RealEstate.Infrastructure.Services;
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using System.Security.Cryptography;
 using System.Text;
+using System.Net.Http.Json;
+using Microsoft.AspNetCore.Http.HttpResults;
 
 namespace RealEstate.Infrastructure.Repo
 {
@@ -29,7 +33,7 @@ namespace RealEstate.Infrastructure.Repo
         private readonly UserManager<User> _userManager;
         private readonly IEmailService emailService;
         private readonly IConfiguration config;
-
+        private readonly HttpClient _facebookHttpClient;
         public UserRepo(IConfiguration configuration, SignInManager<User> signInManager,
             UserManager<User> userManager, IEmailService emailService,
             IConfiguration config)
@@ -39,6 +43,10 @@ namespace RealEstate.Infrastructure.Repo
             _userManager = userManager;
             this.emailService = emailService;
             this.config = config;
+            _facebookHttpClient = new HttpClient
+            {
+                BaseAddress = new Uri("https://graph.facebook.com")
+            };
         }
 
         public async Task<LoginResponse> Login(LoginDto loginDto)
@@ -189,7 +197,7 @@ namespace RealEstate.Infrastructure.Repo
             {
                 var decodedTokenBytes = WebEncoders.Base64UrlDecode(resetPasswordDto.Token);
                 var decodedToken = Encoding.UTF8.GetString(decodedTokenBytes);
-                var result = await _userManager.ResetPasswordAsync(user, decodedToken,resetPasswordDto.NewPassword);
+                var result = await _userManager.ResetPasswordAsync(user, decodedToken, resetPasswordDto.NewPassword);
                 if (result.Succeeded)
                 {
                     return new GeneralResponse(true, "Your password has been reset");
@@ -205,6 +213,50 @@ namespace RealEstate.Infrastructure.Repo
             }
         }
 
+        public async Task<GeneralResponse<UserDto>> RegisterWithThirdParty(RegisterWithExternalDto model)
+        {
+            if (model.Provider.Equals(Constant.Facebook))
+
+            {
+                try
+                {
+                    if (!await FacebookValidatedAsync(model.AccessToken, model.UserId))
+                    {
+                        return new GeneralResponse<UserDto>(false, "Unable to register with Facebook");
+                    }
+                }
+                catch (Exception ex)
+                {
+                    return new GeneralResponse<UserDto>(false, "Unauthorized");
+                }
+            }
+            else if (model.Provider.Equals(Constant.Google))
+            {
+
+            }
+            else
+            {
+                return new GeneralResponse<UserDto>(false, "Unauthorized");
+
+            }
+            var user = await _userManager.FindByNameAsync(model.UserId);
+            if (user != null) return new GeneralResponse<UserDto>(false, string.Format("You already have an account. Please login with {0}", model.Provider));
+
+            var userToAdd = new User
+            {
+                FirstName = model.FirstName.ToLower(),
+                LastName = model.LastName.ToLower(),
+                UserName = model.UserId,
+                Provider = model.Provider,
+            };
+            var result = await _userManager.CreateAsync(userToAdd);
+            if (!result.Succeeded) return new GeneralResponse<UserDto>(false, string.Join("; ", result.Errors.Select(e => e.Description)));
+
+            var userDto=CreateApplicationUserDto(userToAdd);
+            return new GeneralResponse<UserDto>(true, $"Registration with {model.Provider} successful");
+        }
+
+
         #region Private Helper Methods
         private UserDto CreateApplicationUserDto(User user)
         {
@@ -217,7 +269,7 @@ namespace RealEstate.Infrastructure.Repo
             var userClaims = new List<Claim>
             {
                 new Claim(ClaimTypes.NameIdentifier,user.Id),
-                new Claim (ClaimTypes.Email,user.Email),
+                new Claim (ClaimTypes.Email,user.Email ?? string.Empty),
                 new Claim(ClaimTypes.GivenName,user.FirstName),
                 new Claim(ClaimTypes.Surname,user.LastName),
             };
@@ -263,7 +315,17 @@ namespace RealEstate.Infrastructure.Repo
             return await emailService.SendEmailAsync(emailSend);
         }
 
-
+        private async Task<bool> FacebookValidatedAsync(string accessToken, string userId)
+            
+        {
+            var facebookKeys = config["Facebook:AppId"] + "|" + config["Facebook:AppSecret"];
+            var fbResult = await _facebookHttpClient.GetFromJsonAsync<FacebookResponse>($"debug_token?input_token={accessToken}&access_token={facebookKeys}");
+            if (fbResult == null || fbResult.Data.Is_Valid == false || !fbResult.Data.User_Id.Equals(userId))
+            {
+                return false;
+            }
+            return true;
+        }
 
         #endregion
     }

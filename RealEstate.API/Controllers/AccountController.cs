@@ -108,6 +108,15 @@ namespace RealEstate.API.Controllers
             }
             return Ok(result);
         }
-
+        [HttpPost("register-with-third-party")]
+        public async Task<IActionResult> RegisterWithThirdParty(RegisterWithExternalDto model)
+        {
+            var result = await _user.RegisterWithThirdParty(model);
+            if (!result.Success)
+            {
+                return BadRequest(result);
+            }
+            return Ok(result);
+        }
     }
 }

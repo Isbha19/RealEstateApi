@@ -6,8 +6,10 @@ using System.Threading.Tasks;
 
 namespace RealEstate.Application.Extensions
 {
-    public class Constant
+    public static class Constant
     {
+        public const string Facebook = "facebook";
+        public const string Google = "google";
         public const string Admin = "Admin";
         public const string User= "User";
     }
