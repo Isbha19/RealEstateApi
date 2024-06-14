@@ -11,6 +11,8 @@ namespace RealEstate.Application.Extensions
         public const string Facebook = "facebook";
         public const string Google = "google";
         public const string Admin = "Admin";
+        public const string CompanyAdmin = "Company Admin";
+        public const string Agent = "Agent";
         public const string User= "User";
     }
 }

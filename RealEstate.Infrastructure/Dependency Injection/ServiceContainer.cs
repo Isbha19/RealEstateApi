@@ -5,6 +5,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.IdentityModel.Tokens;
+using Microsoft.OpenApi.Models;
 using RealEstate.Application.Contracts;
 using RealEstate.Application.Services;
 using RealEstate.Domain.Entities;
@@ -50,7 +51,8 @@ namespace RealEstate.Infrastructure.Dependency_Injection
                     };
                 });
             services.AddScoped<IUser, UserRepo>();
-            services.AddScoped<IEmailService,EmailService>();
+            services.AddScoped<IEmailService, EmailService>();
+            services.AddScoped<IContextSeedService, ContextSeedService>();
             //to respond with an Array containing error messages when the model state is invalid
             services.Configure<ApiBehaviorOptions>(options =>
             {
@@ -67,7 +69,31 @@ namespace RealEstate.Infrastructure.Dependency_Injection
                     return new BadRequestObjectResult(toReturn);
                 };
             });
+            services.AddCors();
 
+            services.AddSwaggerGen(options =>
+            {
+                options.AddSecurityDefinition(name: JwtBearerDefaults.AuthenticationScheme, securityScheme: new OpenApiSecurityScheme
+                {
+                    Name = "Authorization",
+                    Description = "Enter the Bearer Authorization: `Bearer Generated-JWT-Token`",
+                    In = ParameterLocation.Header,
+                    Type = SecuritySchemeType.ApiKey,
+                    Scheme = "Bearer"
+                });
+                options.AddSecurityRequirement(new OpenApiSecurityRequirement
+                {{
+                    new OpenApiSecurityScheme
+                    {
+                        Reference=new OpenApiReference
+                        {
+                            Type=ReferenceType.SecurityScheme,
+                            Id=JwtBearerDefaults.AuthenticationScheme
+                        }
+                    },new string[]{ }
+                    }
+                });
+                        });
             return services;
         }
     }

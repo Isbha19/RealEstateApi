@@ -1,6 +1,5 @@
-using Microsoft.AspNetCore.Authentication.JwtBearer;
 using RealEstate.Infrastructure.Dependency_Injection;
-using Microsoft.OpenApi.Models;
+using RealEstate.Application.Services;
 var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
@@ -8,31 +7,8 @@ var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddControllers();
 // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
 builder.Services.AddEndpointsApiExplorer();
-builder.Services.AddSwaggerGen(options =>
-{
-    options.AddSecurityDefinition(name: JwtBearerDefaults.AuthenticationScheme, securityScheme: new OpenApiSecurityScheme
-    {
-        Name = "Authorization",
-        Description = "Enter the Bearer Authorization: `Bearer Generated-JWT-Token`",
-        In = ParameterLocation.Header,
-        Type = SecuritySchemeType.ApiKey,
-        Scheme = "Bearer"
-    });
-    options.AddSecurityRequirement(new OpenApiSecurityRequirement
-    {{
-        new OpenApiSecurityScheme
-        {
-            Reference=new OpenApiReference
-            {
-                Type=ReferenceType.SecurityScheme,
-                Id=JwtBearerDefaults.AuthenticationScheme
-            }
-        },new string[]{ }
-        }
-    });
-});
+
 builder.Services.InfrastructureServices(builder.Configuration);
-builder.Services.AddCors();
 var app = builder.Build();
 
 app.UseCors(opt =>
@@ -51,5 +27,19 @@ app.UseAuthentication();
 app.UseAuthorization();
 
 app.MapControllers();
+#region contextSeed
+using var scope = app.Services.CreateScope();
+try
+{
+    var contextSeedService = scope.ServiceProvider.GetService<IContextSeedService>(); // Resolve using the interface
+    await contextSeedService.InitializeContextAsync();
+}
+catch (Exception ex)
+{
+    var logger = scope.ServiceProvider.GetRequiredService<ILogger<Program>>();
+    logger.LogError(ex, "Failed to initialize and seed the database"); // Use the exception as the first parameter
+}
+#endregion
+
 
 app.Run();

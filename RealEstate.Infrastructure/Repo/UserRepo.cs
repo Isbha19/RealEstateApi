@@ -58,7 +58,7 @@ namespace RealEstate.Infrastructure.Repo
 
             var result = await _signInManager.CheckPasswordSignInAsync(user, loginDto.Password, false);
             if (!result.Succeeded) return new GeneralResponseGen<UserDto>(false, "Invalid username or password");
-            var userDto = CreateApplicationUserDto(user);
+            var userDto = await CreateApplicationUserDto(user);
 
             return new GeneralResponseGen<UserDto>(true, $"{userDto.FirstName} {userDto.LastName} successfully logged in", userDto);
 
@@ -110,7 +110,7 @@ namespace RealEstate.Infrastructure.Repo
             {
                 return new GeneralResponseGen <UserDto> (false, "User not found");
             }
-            var userDto = CreateApplicationUserDto(user);
+            var userDto = await CreateApplicationUserDto(user);
             
             return new GeneralResponseGen<UserDto>(true, "Token Refreshed", userDto);
         }
@@ -266,7 +266,7 @@ namespace RealEstate.Infrastructure.Repo
             var result = await _userManager.CreateAsync(userToAdd);
             if (!result.Succeeded) return new GeneralResponseGen<UserDto>(false, string.Join("; ", result.Errors.Select(e => e.Description)));
 
-            var userDto=CreateApplicationUserDto(userToAdd);
+            var userDto= await CreateApplicationUserDto(userToAdd);
             return new GeneralResponseGen<UserDto>(true, $"Registration with {model.Provider} successful", userDto);
         }
 
@@ -311,18 +311,18 @@ namespace RealEstate.Infrastructure.Repo
             }
             var user=await _userManager.Users.FirstOrDefaultAsync(x=>x.UserName==model.UserId&&x.Provider==model.Provider);
             if (user == null) return new GeneralResponseGen<UserDto>(false, "Unable to find your account");
-            var userDto = CreateApplicationUserDto(user);
-            return new GeneralResponseGen<UserDto>(true, $"Registration with {model.Provider} successful", userDto);
+            var userDto = await CreateApplicationUserDto(user);
+            return new GeneralResponseGen<UserDto>(true, $"Login with {model.Provider} successful", userDto);
         }
 
 
         #region Private Helper Methods
-        private UserDto CreateApplicationUserDto(User user)
+        private async Task<UserDto> CreateApplicationUserDto(User user)
         {
-            return new UserDto(FirstName: user.FirstName, LastName: user.LastName, JWT: GenerateJWTToken(user));
+            return new UserDto(FirstName: user.FirstName, LastName: user.LastName, JWT:await GenerateJWTToken(user));
 
         }
-        private string GenerateJWTToken(User user)
+        private async Task<string> GenerateJWTToken(User user)
         {
 
             var userClaims = new List<Claim>
@@ -332,6 +332,8 @@ namespace RealEstate.Infrastructure.Repo
                 new Claim(ClaimTypes.GivenName,user.FirstName),
                 new Claim(ClaimTypes.Surname,user.LastName),
             };
+            var roles=await _userManager.GetRolesAsync(user);
+            userClaims.AddRange(roles.Select(role => new Claim(ClaimTypes.Role, role)));
             var securityKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes("this is my custom Secret key for authentication which should be atleast 512 bits"));
             var credentials = new SigningCredentials(securityKey, SecurityAlgorithms.HmacSha512Signature);
             var tokenDescriptor = new SecurityTokenDescriptor
