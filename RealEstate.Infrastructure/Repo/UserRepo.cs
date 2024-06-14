@@ -290,7 +290,19 @@ namespace RealEstate.Infrastructure.Repo
             }
             else if (model.Provider.Equals(Constant.Google))
             {
+                try
+                {
+                    if (!await GoogleValidatedAsync(model.AccessToken, model.UserId))
+                    {
+                        return new GeneralResponseGen<UserDto>(false, "Unable to login with Google");
 
+                    }
+                }
+                catch (Exception)
+                {
+                    return new GeneralResponseGen<UserDto>(false, "Unable to login with Google");
+
+                }
             }
             else
             {
