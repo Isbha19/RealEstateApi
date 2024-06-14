@@ -22,33 +22,33 @@ namespace RealEstate.API.Controllers
         }
         [HttpPost("login")]
 
-        public async Task<ActionResult<LoginResponse>> Login(LoginDto loginDto)
+        public async Task<ActionResult> Login(LoginDto loginDto)
         {
             var result=await _user.Login(loginDto);
-            if (!result.Flag)
+            if (!result.Success)
             {
                 // If result.flag is false, return BadRequest with the message from result.message
-                return BadRequest(new LoginResponse(false, result.Message));
+                return BadRequest(result);
             }
             return Ok(result);
         }
         [HttpPost("register")]
 
-        public async Task<ActionResult<GeneralResponse>> Register(RegisterDto registerDto)
+        public async Task<ActionResult> Register(RegisterDto registerDto)
         {
             var result = await _user.Register(registerDto);
 
             if (!result.Flag)
             {
                 // If result.flag is false, return BadRequest with the message from result.message
-                return BadRequest(new GeneralResponse(false, result.Message));
+                return BadRequest(result);
             }
 
             return Ok(result);
         }
         [Authorize]
         [HttpGet("refresh-user-token")]
-        public async Task<ActionResult<GeneralResponse>> RefreshUserToken()
+        public async Task<ActionResult> RefreshUserToken()
         {
             var email = User.FindFirst(ClaimTypes.Email)?.Value;
             if (string.IsNullOrEmpty(email))
@@ -57,12 +57,12 @@ namespace RealEstate.API.Controllers
             }
 
             var response = await _user.RefreshToken(email);
-            if (!response.Flag)
+            if (!response.Success)
             {
-                return BadRequest(response.Message);
+                return BadRequest(response);
             }
 
-            return Ok(new { token = response.refreshToken, message = response.Message });
+            return Ok(response);
         }
         [HttpPut("confirm-email")]
         public async Task<IActionResult> ConfirmEmail(ConfirmEmailDto confirmEmailDto)
@@ -112,6 +112,16 @@ namespace RealEstate.API.Controllers
         public async Task<IActionResult> RegisterWithThirdParty(RegisterWithExternalDto model)
         {
             var result = await _user.RegisterWithThirdParty(model);
+            if (!result.Success)
+            {
+                return BadRequest(result);
+            }
+            return Ok(result);
+        }
+        [HttpPost("login-with-third-party")]
+        public async Task<IActionResult> LoginWithThirdParty(LoginWithExternalDto model)
+        {
+            var result = await _user.LoginWithThirdParty(model);
             if (!result.Success)
             {
                 return BadRequest(result);

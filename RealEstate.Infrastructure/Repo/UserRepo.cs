@@ -49,17 +49,17 @@ namespace RealEstate.Infrastructure.Repo
             };
         }
 
-        public async Task<LoginResponse> Login(LoginDto loginDto)
+        public async Task<GeneralResponseGen<UserDto>> Login(LoginDto loginDto)
         {
             var user = await _userManager.FindByNameAsync(loginDto.UserName);
-            if (user == null) return new LoginResponse(false, "Invalid username or password");
-            if (user.EmailConfirmed == false) return new LoginResponse(false, "please confirm your email");
+            if (user == null) return new GeneralResponseGen<UserDto>(false, "Invalid username or password");
+            if (user.EmailConfirmed == false) return new GeneralResponseGen<UserDto>(false, "please confirm your email");
 
             var result = await _signInManager.CheckPasswordSignInAsync(user, loginDto.Password, false);
-            if (!result.Succeeded) return new LoginResponse(false, "Invalid username or password");
+            if (!result.Succeeded) return new GeneralResponseGen<UserDto>(false, "Invalid username or password");
             var userDto = CreateApplicationUserDto(user);
 
-            return new LoginResponse(true, $"{userDto.FirstName} {userDto.LastName} successfully logged in", userDto.JWT);
+            return new GeneralResponseGen<UserDto>(true, $"{userDto.FirstName} {userDto.LastName} successfully logged in", userDto);
 
 
         }
@@ -102,15 +102,16 @@ namespace RealEstate.Infrastructure.Repo
 
         }
 
-        public async Task<LoginResponse> RefreshToken(string email)
+        public async Task<GeneralResponseGen<UserDto>> RefreshToken(string email)
         {
-            var user = await _userManager.FindByEmailAsync(email);
+            var user = await _userManager.FindByNameAsync(email);
             if (user == null)
             {
-                return new LoginResponse(false, "User not found");
+                return new GeneralResponseGen <UserDto> (false, "User not found");
             }
             var userDto = CreateApplicationUserDto(user);
-            return new LoginResponse(true, "Token Refreshed", refreshToken: userDto.JWT);
+            
+            return new GeneralResponseGen<UserDto>(true, "Token Refreshed", userDto);
         }
 
         public async Task<GeneralResponse> ConfirmEmail(ConfirmEmailDto confirmEmailDto)
@@ -213,7 +214,7 @@ namespace RealEstate.Infrastructure.Repo
             }
         }
 
-        public async Task<GeneralResponse<UserDto>> RegisterWithThirdParty(RegisterWithExternalDto model)
+        public async Task<GeneralResponseGen<UserDto>> RegisterWithThirdParty(RegisterWithExternalDto model)
         {
             if (model.Provider.Equals(Constant.Facebook))
 
@@ -222,12 +223,12 @@ namespace RealEstate.Infrastructure.Repo
                 {
                     if (!await FacebookValidatedAsync(model.AccessToken, model.UserId))
                     {
-                        return new GeneralResponse<UserDto>(false, "Unable to register with Facebook");
+                        return new GeneralResponseGen<UserDto>(false, "Unable to register with Facebook");
                     }
                 }
                 catch (Exception ex)
                 {
-                    return new GeneralResponse<UserDto>(false, "Unauthorized");
+                    return new GeneralResponseGen<UserDto>(false, "Unauthorized");
                 }
             }
             else if (model.Provider.Equals(Constant.Google))
@@ -236,11 +237,11 @@ namespace RealEstate.Infrastructure.Repo
             }
             else
             {
-                return new GeneralResponse<UserDto>(false, "Unauthorized");
+                return new GeneralResponseGen<UserDto>(false, "Unauthorized");
 
             }
             var user = await _userManager.FindByNameAsync(model.UserId);
-            if (user != null) return new GeneralResponse<UserDto>(false, string.Format("You already have an account. Please login with {0}", model.Provider));
+            if (user != null) return new GeneralResponseGen<UserDto>(false, $"You already have an account. Please login with {model.Provider}");
 
             var userToAdd = new User
             {
@@ -250,10 +251,43 @@ namespace RealEstate.Infrastructure.Repo
                 Provider = model.Provider,
             };
             var result = await _userManager.CreateAsync(userToAdd);
-            if (!result.Succeeded) return new GeneralResponse<UserDto>(false, string.Join("; ", result.Errors.Select(e => e.Description)));
+            if (!result.Succeeded) return new GeneralResponseGen<UserDto>(false, string.Join("; ", result.Errors.Select(e => e.Description)));
 
             var userDto=CreateApplicationUserDto(userToAdd);
-            return new GeneralResponse<UserDto>(true, $"Registration with {model.Provider} successful");
+            return new GeneralResponseGen<UserDto>(true, $"Registration with {model.Provider} successful", userDto);
+        }
+
+
+        public async Task<GeneralResponseGen<UserDto>> LoginWithThirdParty(LoginWithExternalDto model)
+        {
+            if (model.Provider.Equals(Constant.Facebook))
+            {
+                try
+                {
+                    if (!await FacebookValidatedAsync(model.AccessToken, model.UserId))
+                    {
+                        return new GeneralResponseGen<UserDto>(false, "Unable to login with Facebook");
+                    }
+                }
+                catch (Exception ex)
+                {
+                    return new GeneralResponseGen<UserDto>(false, "Unauthorized to login with facebook");
+                }
+
+            }
+            else if (model.Provider.Equals(Constant.Google))
+            {
+
+            }
+            else
+            {
+                return new GeneralResponseGen<UserDto>(false, "Unauthorized");
+
+            }
+            var user=await _userManager.Users.FirstOrDefaultAsync(x=>x.UserName==model.UserId&&x.Provider==model.Provider);
+            if (user == null) return new GeneralResponseGen<UserDto>(false, "Unable to find your account");
+            var userDto = CreateApplicationUserDto(user);
+            return new GeneralResponseGen<UserDto>(true, $"Registration with {model.Provider} successful", userDto);
         }
 
 
@@ -269,7 +303,7 @@ namespace RealEstate.Infrastructure.Repo
             var userClaims = new List<Claim>
             {
                 new Claim(ClaimTypes.NameIdentifier,user.Id),
-                new Claim (ClaimTypes.Email,user.Email ?? string.Empty),
+                new Claim (ClaimTypes.Email,user?.UserName),
                 new Claim(ClaimTypes.GivenName,user.FirstName),
                 new Claim(ClaimTypes.Surname,user.LastName),
             };
@@ -327,6 +361,7 @@ namespace RealEstate.Infrastructure.Repo
             return true;
         }
 
+       
         #endregion
     }
 }
