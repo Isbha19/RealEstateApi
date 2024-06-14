@@ -23,6 +23,7 @@ using System.Security.Cryptography;
 using System.Text;
 using System.Net.Http.Json;
 using Microsoft.AspNetCore.Http.HttpResults;
+using Google.Apis.Auth;
 
 namespace RealEstate.Infrastructure.Repo
 {
@@ -233,7 +234,19 @@ namespace RealEstate.Infrastructure.Repo
             }
             else if (model.Provider.Equals(Constant.Google))
             {
+                try
+                {
+                    if(!await GoogleValidatedAsync(model.AccessToken, model.UserId))
+                    {
+                        return new GeneralResponseGen<UserDto>(false, "Unable to register with Google");
 
+                    }
+                }
+                catch (Exception)
+                {
+                    return new GeneralResponseGen<UserDto>(false, "Unable to register with Google");
+
+                }
             }
             else
             {
@@ -269,7 +282,7 @@ namespace RealEstate.Infrastructure.Repo
                         return new GeneralResponseGen<UserDto>(false, "Unable to login with Facebook");
                     }
                 }
-                catch (Exception ex)
+                catch (Exception)
                 {
                     return new GeneralResponseGen<UserDto>(false, "Unauthorized to login with facebook");
                 }
@@ -361,7 +374,18 @@ namespace RealEstate.Infrastructure.Repo
             return true;
         }
 
-       
+       private async Task<bool> GoogleValidatedAsync(string accessToken, string userId)
+        {
+            var payload = await GoogleJsonWebSignature.ValidateAsync(accessToken);
+            if (!payload.Audience.Equals(config["Google:ClientId"])) return false;
+            if (!payload.Issuer.Equals("account.google.com") && !payload.Issuer.Equals("https://accounts.google.com")) return false;
+            if(payload.ExpirationTimeSeconds==null)return false;
+            DateTime now = DateTime.Now.ToUniversalTime();
+            DateTime expiration=DateTimeOffset.FromUnixTimeSeconds((long)payload.ExpirationTimeSeconds).DateTime;
+            if(now>expiration) return false;
+            if(!payload.Subject.Equals(userId))return false;
+            return true;
+        }
         #endregion
     }
 }
