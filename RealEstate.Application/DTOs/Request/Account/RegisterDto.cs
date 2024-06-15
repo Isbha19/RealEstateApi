@@ -9,8 +9,6 @@ namespace RealEstate.Application.DTOs.Request.Account
         [Required]
         [RegularExpression(@"^[-'a-zA-Z]+$", ErrorMessage = "First Name cannot contain numbers.")]
 
-
-
         [StringLength(15,MinimumLength =3,ErrorMessage ="First name must be atleast {2},and maximum {1} characters")]
         public string FirstName { get; set; }
         [Required]

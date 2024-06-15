@@ -16,5 +16,6 @@ namespace RealEstate.Application.Extensions
         public const string User= "User";
         public const string AdminUserName = "admin@example.com";
         public const string SuperAdminChangeNotAllowed = "Super Admin change is not allowed";
+        public const int MaximumLoginAttempt = 3;
     }
 }

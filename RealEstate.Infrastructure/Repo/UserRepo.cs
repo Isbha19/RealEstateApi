@@ -58,7 +58,24 @@ namespace RealEstate.Infrastructure.Repo
 
             var result = await _signInManager.CheckPasswordSignInAsync(user, loginDto.Password, false);
             if (result.IsLockedOut) return new GeneralResponseGen<UserDto>(false, $"Your account has been locked, You should wait until {user.LockoutEnd} (UTC time) to be able to login");
-            if (!result.Succeeded) return new GeneralResponseGen<UserDto>(false, "Invalid username or password");
+            if (!result.Succeeded) {
+                if (!user.UserName.Equals(Constant.AdminUserName))
+                {
+                    //incrementong accessFailedCount of the user by
+                    await _userManager.AccessFailedAsync(user);
+
+                }
+                if (user.AccessFailedCount >= Constant.MaximumLoginAttempt)
+                {
+                    //lock the user for one day
+                    await _userManager.SetLockoutEndDateAsync(user, DateTime.UtcNow.AddDays(1));
+                   return new GeneralResponseGen<UserDto>(false, $"Your account has been locked, You should wait until {user.LockoutEnd} (UTC time) to be able to login");
+
+                }
+                return new GeneralResponseGen<UserDto>(false, "Invalid username or password"); 
+            }
+            await _userManager.ResetAccessFailedCountAsync(user);
+            await _userManager.SetLockoutEndDateAsync(user, null);
             var userDto = await CreateApplicationUserDto(user);
 
             return new GeneralResponseGen<UserDto>(true, $"{userDto.FirstName} {userDto.LastName} successfully logged in", userDto);
@@ -83,6 +100,7 @@ namespace RealEstate.Infrastructure.Repo
             var errors = string.Join(", ", result.Errors.Select(e => e.Description));
 
             if (!result.Succeeded) return new GeneralResponse(false, errors);
+            await _userManager.AddToRoleAsync(userToAdd, Constant.User);
             try
             {
                 if (await SendConfirmEmailAsync(userToAdd))
@@ -266,8 +284,8 @@ namespace RealEstate.Infrastructure.Repo
             };
             var result = await _userManager.CreateAsync(userToAdd);
             if (!result.Succeeded) return new GeneralResponseGen<UserDto>(false, string.Join("; ", result.Errors.Select(e => e.Description)));
-
-            var userDto= await CreateApplicationUserDto(userToAdd);
+            await _userManager.AddToRoleAsync(userToAdd, Constant.User);
+            var userDto = await CreateApplicationUserDto(userToAdd);
             return new GeneralResponseGen<UserDto>(true, $"Registration with {model.Provider} successful", userDto);
         }
 

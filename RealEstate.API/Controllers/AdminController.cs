@@ -2,6 +2,7 @@
 
 using Microsoft.AspNetCore.Mvc;
 using RealEstate.Application.Contracts;
+using RealEstate.Application.DTOs.Request.Admin;
 
 
 namespace RealEstate.API.Controllers
@@ -28,6 +29,28 @@ namespace RealEstate.API.Controllers
             return Ok(result);
 
         }
+        [HttpGet("get-member/{id}")]
+        public async Task<IActionResult> GetMember(string id)
+        {
+            var result = await admin.GetMember(id);
+            if (!result.Success)
+            {
+                return BadRequest(result);
+            }
+            return Ok(result);
+
+        }
+        [HttpPost("add-edit-member")]
+        public async Task<IActionResult> AddEditMember(MemberAddEditDto model)
+        {
+            var result = await admin.AddEditMember(model);
+            if (!result.Success)
+            {
+                return BadRequest(result);
+            }
+            return Ok(result);
+
+        }
         [HttpPut("lock-member/{Id}")]
         public async Task<IActionResult> LockMember(string Id)
         {
@@ -37,6 +60,37 @@ namespace RealEstate.API.Controllers
                 return BadRequest(result);
             }
             return Ok(result);
+        }
+        [HttpPut("unlock-member/{Id}")]
+        public async Task<IActionResult> UnLockMember(string Id)
+        {
+            var result = await admin.UnLockMember(Id);
+            if (!result.Success)
+            {
+                return BadRequest(result);
+            }
+            return Ok(result);
+        }
+        [HttpDelete("delete-member/{Id}")]
+        public async Task<IActionResult> DeleteMember(string Id)
+        {
+            var result = await admin.DeleteMember(Id);
+            if (!result.Success)
+            {
+                return BadRequest(result);
+            }
+            return Ok(result);
+        }
+        
+             [HttpGet("get-application-roles")]
+        public async Task<IActionResult> GetApplicationRoles()
+        {
+            var result = await admin.GetApplicationRoles();
+            if (result.Success)
+            {
+                return Ok(result);
+            }
+            return BadRequest();
         }
 
     }
