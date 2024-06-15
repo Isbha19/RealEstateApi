@@ -61,7 +61,7 @@ namespace RealEstate.Infrastructure.Services
                     EmailConfirmed = true
                 };
                 await userManager.CreateAsync(admin, "123456");
-                await userManager.AddToRolesAsync(admin,new[] { Constant.Admin,Constant.User} );
+                await userManager.AddToRoleAsync(admin, Constant.Admin);
                 await userManager.AddClaimAsync(admin, new Claim(ClaimTypes.Email, admin.Email));
                 await userManager.AddClaimAsync(admin, new Claim(ClaimTypes.Surname, admin.LastName));
                 var companyAdmin = new User
@@ -73,7 +73,7 @@ namespace RealEstate.Infrastructure.Services
                     EmailConfirmed = true
                 };
                 await userManager.CreateAsync(companyAdmin, "123456");
-                await userManager.AddToRolesAsync(companyAdmin, new[] { Constant.CompanyAdmin, Constant.User });
+                await userManager.AddToRoleAsync(companyAdmin, Constant.CompanyAdmin);
                 await userManager.AddClaimAsync(companyAdmin, new Claim(ClaimTypes.Email, companyAdmin.Email));
                 await userManager.AddClaimAsync(companyAdmin, new Claim(ClaimTypes.Surname, companyAdmin.LastName));
                 var agent = new User
@@ -85,7 +85,7 @@ namespace RealEstate.Infrastructure.Services
                     EmailConfirmed = true
                 };
                 await userManager.CreateAsync(agent, "123456");
-                await userManager.AddToRolesAsync(agent, new[] { Constant.Agent, Constant.User });
+                await userManager.AddToRoleAsync(agent, Constant.Agent);
                 await userManager.AddClaimAsync(agent, new Claim(ClaimTypes.Email, agent.Email));
                 await userManager.AddClaimAsync(agent, new Claim(ClaimTypes.Surname, agent.LastName));
 

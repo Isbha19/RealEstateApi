@@ -57,6 +57,7 @@ namespace RealEstate.Infrastructure.Repo
             if (user.EmailConfirmed == false) return new GeneralResponseGen<UserDto>(false, "please confirm your email");
 
             var result = await _signInManager.CheckPasswordSignInAsync(user, loginDto.Password, false);
+            if (result.IsLockedOut) return new GeneralResponseGen<UserDto>(false, $"Your account has been locked, You should wait until {user.LockoutEnd} (UTC time) to be able to login");
             if (!result.Succeeded) return new GeneralResponseGen<UserDto>(false, "Invalid username or password");
             var userDto = await CreateApplicationUserDto(user);
 

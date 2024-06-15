@@ -50,7 +50,10 @@ namespace RealEstate.Infrastructure.Dependency_Injection
 
                     };
                 });
+            //Repos
             services.AddScoped<IUser, UserRepo>();
+            services.AddScoped<IAdmin, AdminRepo>();
+            //Services
             services.AddScoped<IEmailService, EmailService>();
             services.AddScoped<IContextSeedService, ContextSeedService>();
             //to respond with an Array containing error messages when the model state is invalid
