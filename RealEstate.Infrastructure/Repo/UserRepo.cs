@@ -129,6 +129,11 @@ namespace RealEstate.Infrastructure.Repo
             {
                 return new GeneralResponseGen <UserDto> (false, "User not found");
             }
+            if(await _userManager.IsLockedOutAsync(user))
+            {
+                return new GeneralResponseGen<UserDto>(false, "Your account has been blocked");
+
+            }
             var userDto = await CreateApplicationUserDto(user);
             
             return new GeneralResponseGen<UserDto>(true, "Token Refreshed", userDto);

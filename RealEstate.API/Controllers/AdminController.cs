@@ -26,7 +26,7 @@ namespace RealEstate.API.Controllers
             {
                 return BadRequest(result);
             }
-            return Ok(result);
+            return Ok(result.Members);
 
         }
         [HttpGet("get-member/{id}")]
@@ -37,7 +37,7 @@ namespace RealEstate.API.Controllers
             {
                 return BadRequest(result);
             }
-            return Ok(result);
+            return Ok(result.Member);
 
         }
         [HttpPost("add-edit-member")]
@@ -88,7 +88,7 @@ namespace RealEstate.API.Controllers
             var result = await admin.GetApplicationRoles();
             if (result.Success)
             {
-                return Ok(result);
+                return Ok(result.Roles);
             }
             return BadRequest();
         }

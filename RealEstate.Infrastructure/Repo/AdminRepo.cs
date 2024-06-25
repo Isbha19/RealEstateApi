@@ -35,6 +35,7 @@ namespace RealEstate.Infrastructure.Repo
                      Id = member.Id,
                      UserName = member.UserName,
                      FirstName = member.FirstName,
+                     LastName = member.LastName,
                      DateCreated = member.DateCreated,
                      IsLocked = userManager.IsLockedOutAsync(member).GetAwaiter().GetResult(),
                      Roles = userManager.GetRolesAsync(member).GetAwaiter().GetResult()
@@ -120,21 +121,28 @@ namespace RealEstate.Infrastructure.Repo
             User user;
             if (string.IsNullOrEmpty(model.Id))
             {
-             
+
                 //add a new member
                 if (string.IsNullOrEmpty(model.Password))
                 {
                     return new GeneralResponse(false, "Password is required");
-                }else if (model.Password.Length < 6)
+                }
+                else if (model.Password.Length < 6)
                 {
                     return new GeneralResponse(false, "Password must have atleast 6 characters");
 
+
+                }
+                if (await CheckEmailExistAsync(model.UserName))
+                {
+                    return new GeneralResponse(false, $"An existing account is using {model.UserName}, email address, please try with another email address");
                 }
                 user = new User
                 {
                     FirstName = model.FirstName.ToLower(),
                     LastName = model.LastName.ToLower(),
                     UserName = model.UserName.ToLower(),
+                    Email=model.UserName.ToLower(),
                     EmailConfirmed = true
 
                 };
@@ -154,7 +162,7 @@ namespace RealEstate.Infrastructure.Repo
 
                     }
                 }
-                
+
                 if (IsAdmin(model.Id))
                 {
                     return new GeneralResponse(false, Constant.SuperAdminChangeNotAllowed);
@@ -165,9 +173,20 @@ namespace RealEstate.Infrastructure.Repo
                 {
                     return new GeneralResponse(false, "user not found");
                 }
+                if (!user.UserName.Equals(model.UserName, StringComparison.OrdinalIgnoreCase))
+                {
+                    // Check if the new email already exists
+                    if (await CheckEmailExistAsync(model.UserName))
+                    {
+                        return new GeneralResponse(false, $"An existing account is using {model.UserName} email address, please try with another email address");
+                    }
+                }
+
                 user.FirstName = model.FirstName.ToLower();
                 user.LastName = model.LastName.ToLower();
                 user.UserName = model.UserName.ToLower();
+                user.Email = model.UserName.ToLower();
+
 
                 if (!string.IsNullOrEmpty(model.Password))
                 {
@@ -206,6 +225,7 @@ namespace RealEstate.Infrastructure.Repo
             return await userManager.Users.AnyAsync(x => x.Email == email.ToLower());
         }
 
+     
 
 
         #endregion
